@@ -11,3 +11,5 @@ Uses Vulkan right now
 ```
 sudo pacman -Syu vulkan-icd-loader vulkan-radeon vulkan-headers vulkan-validation-layers mesa vulkan-tools
 ```
+
+Also needs ffmpeg and yt-dlp
