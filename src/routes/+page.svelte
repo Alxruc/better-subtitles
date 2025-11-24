@@ -1,23 +1,93 @@
 <script>
   import { invoke } from "@tauri-apps/api/core";
+  import Database from "@tauri-apps/plugin-sql";
 
-  let url = $state("");
-  let transcriptionSegments = $state([{start: Number, end: Number, text: String}]);
-  let done = $state(false)
+  let url = "";
+  let transcription = [];
+  let transcriptionSegments = [];
+  let done = false;
 
+  async function getTranscripts() {
+    try {
+      const db = await Database.load("sqlite:subtitles.db");
+      const result = await db.select("SELECT * FROM transcripts");
+      transcription = result.map(tr => ({
+        id: tr.id,
+        url: tr.url,
+        duration: tr.duration,
+        created_at: tr.created_at,
+      }));
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
-  async function greet(event) {
+  async function setTranscript(transcript) {
+    try {
+      const db = await Database.load("sqlite:subtitles.db");
+      let result = await db.execute("INSERT INTO transcripts (url, duration, created_at) VALUES ($1, $2, $3)", [
+        transcript.url,
+        transcript.duration,
+        transcript.created_at
+      ]);
+      getTranscripts();
+      return result.lastInsertId;
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function getSegments() {
+    try {
+      const db = await Database.load("sqlite:subtitles.db");
+      const result = await db.select("SELECT * FROM segments");
+      transcriptionSegments = result.map(seg => ({
+        start: seg.start_time_sec,
+        end: seg.end_time_sec,
+        text: seg.text_content
+      }));
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function setSegment(segment) {
+    try {
+      const db = await Database.load("sqlite:subtitles.db");
+      await db.execute("INSERT INTO segments (transcript_id, start_time_sec, end_time_sec, text_content) VALUES ($1, $2, $3, $4)", [
+        segment.transcript_id,
+        segment.start_time_sec,
+        segment.end_time_sec,
+        segment.text_content,
+      ]);
+      getSegments();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  async function startTranscription(event) {
     event.preventDefault();
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    transcriptionSegments = await invoke("transcribe", { url })
-    done = true
+    transcriptionSegments = await invoke("transcribe", { url });
+    const transcriptId = await setTranscript({ url, duration: 0, created_at: new Date().toISOString() });
+
+    for (const segment of transcriptionSegments) {
+      await setSegment({
+        transcript_id: transcriptId,
+        start_time_sec: segment.start,
+        end_time_sec: segment.end,
+        text_content: segment.text,
+      });
+    }
+
+    done = true;
   }
 </script>
 
 <main class="container">
   <h1> Better Subtitle Generation for YouTube </h1>
 
-  <form class="row" onsubmit={greet}>
+  <form class="row" onsubmit={startTranscription}>
     <input id="greet-input" placeholder="Enter a YouTube URL..." bind:value={url} />
     <button type="submit">Transcribe</button>
   </form>

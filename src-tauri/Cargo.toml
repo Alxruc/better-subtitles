@@ -24,4 +24,5 @@ serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 whisper-rs = { version = "0.15.1", features = ["vulkan"] }
 hound = "3.5.1"
+tauri-plugin-sql = { version = "2", features = ["sqlite"] }
 

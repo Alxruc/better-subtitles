@@ -1,5 +1,6 @@
 use whisper_rs::{WhisperContext, WhisperContextParameters, FullParams, SamplingStrategy};
 use serde::Serialize;
+use tauri_plugin_sql::{Migration, MigrationKind};
 
 mod ytwav;
 
@@ -63,7 +64,44 @@ fn transcribe(url: &str) -> Vec<TranscriptionSegment> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    let migrations = vec![  
+        Migration {  
+            version: 1,  
+            description: "create transcripts table",  
+            sql: "CREATE TABLE IF NOT EXISTS transcripts (  
+                id INTEGER PRIMARY KEY AUTOINCREMENT,  
+                url TEXT,
+                title TEXT,
+                duration INTEGER NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )",  
+            kind: MigrationKind::Up,  
+        },
+
+        Migration {
+        version: 2,
+        description: "create segments table and index",
+        sql: "
+            CREATE TABLE IF NOT EXISTS segments (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                transcript_id INTEGER NOT NULL,
+                start_time_sec INTEGER NOT NULL,
+                end_time_sec INTEGER NOT NULL,
+                text_content TEXT NOT NULL,
+                FOREIGN KEY(transcript_id) REFERENCES transcripts(id)
+            );
+            
+            -- Add an index for fast retrieval of segments by transcript ID
+            CREATE INDEX idx_segments_transcript_id ON segments(transcript_id);
+        ",
+        kind: MigrationKind::Up,
+    },
+    ];  
+
     tauri::Builder::default()
+        .plugin(tauri_plugin_sql::Builder::default()
+                .add_migrations("sqlite:subtitles.db", migrations)
+                .build())
         .plugin(tauri_plugin_opener::init())
         .invoke_handler(tauri::generate_handler![transcribe])
         .run(tauri::generate_context!())
