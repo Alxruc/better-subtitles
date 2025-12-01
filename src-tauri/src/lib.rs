@@ -4,7 +4,7 @@ use tauri_plugin_sql::{Migration, MigrationKind};
 
 mod ytwav;
 
-const MODEL_PATH: &str = "../models/ggml-kotoba-whisper-v2.0.bin";
+const MODEL_PATH: &str = "../models/ggml-base.bin";
 
 #[derive(Serialize)]
 pub struct TranscriptionSegment {
@@ -14,7 +14,7 @@ pub struct TranscriptionSegment {
 }
 
 #[tauri::command]
-fn transcribe(url: &str) -> Vec<TranscriptionSegment> {
+async fn transcribe(url: &str) -> Result<Vec<TranscriptionSegment>, String> {
     let ctx = WhisperContext::new_with_params(
         MODEL_PATH,
         WhisperContextParameters::default()
@@ -24,7 +24,9 @@ fn transcribe(url: &str) -> Vec<TranscriptionSegment> {
     let params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
 
     let st = std::time::Instant::now();
-    let audio_i16 = ytwav::youtube_to_pcm_i16(url).expect("Error in converting URL to WAV");
+    let audio_i16 = ytwav::youtube_to_pcm_i16(url)
+                            .await
+                            .expect("Error in converting URL to WAV");
 
     //  Convert to f32 for whisper
     let mut float_samples = vec![0.0f32; audio_i16.len()];
@@ -59,7 +61,7 @@ fn transcribe(url: &str) -> Vec<TranscriptionSegment> {
     let et = std::time::Instant::now();
     println!("-> Finished (took {}ms)", (et - st).as_millis());
 
-    return segments
+    return Ok(segments);
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

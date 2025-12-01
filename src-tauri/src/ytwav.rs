@@ -1,7 +1,7 @@
 use std::io::Read;
 use std::process::{Command, Stdio};
 
-pub fn youtube_to_pcm_i16(url: &str) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
+pub async fn youtube_to_pcm_i16(url: &str) -> Result<Vec<i16>, Box<dyn std::error::Error>> {
     // yt-dlp bestaudio to stdout
     let mut yt = Command::new("yt-dlp")
         .arg("-f")
