@@ -1,71 +1,74 @@
 <script>
-  // <CHANGE> Fixed import - invoke comes from @tauri-apps/api/core, not plugin-shell
   import { invoke } from "@tauri-apps/api/core";
-  import Database from "@tauri-apps/plugin-sql";
+  import { listen } from '@tauri-apps/api/event';
   import { onMount, tick } from "svelte";
   import { goto } from "$app/navigation";
+  import { getTranscripts as fetchTranscripts, setTranscript, setSegment } from "../lib/utils/transcription.js";
+
 
   let url = "";
   let transcriptions = [];
   let isTranscribing = false;
 
-  onMount(() => {
+  onMount(async () => {
     getTranscripts();
     // Poll for updates every 2 seconds to catch new transcriptions
     const interval = setInterval(getTranscripts, 2000);
-    return () => clearInterval(interval);
+
+    const unlisten = await listen('deep-link://new-url', (event) => {
+        const rawUrl = event.payload[0];
+        console.log("Deep link received:", rawUrl);
+        
+        try {
+          // Expected format: better-subtitles://save?url=https://youtube.com/...
+          const urlObj = new URL(rawUrl);
+          const action = urlObj.host; // "save"
+          const targetUrl = urlObj.searchParams.get('url');
+
+          if (action === 'save' && targetUrl) {
+            console.log("Auto-starting transcription for:", targetUrl);
+            
+            // Update the UI input so the user sees what's happening
+            url = targetUrl; 
+            
+            // Trigger the logic directly
+            processTranscription(targetUrl);
+          }
+        } catch (e) {
+          console.error("Failed to parse deep link:", e);
+        }
+    });
+
+
+    return () => {
+      clearInterval(interval);
+      unlisten();
+    }
   });
 
   async function getTranscripts() {
-    try {
-      const db = await Database.load("sqlite:subtitles.db");
-      const result = await db.select("SELECT * FROM transcripts ORDER BY created_at DESC");
-      transcriptions = result.map(tr => ({
-        id: tr.id,
-        url: tr.url,
-        duration: tr.duration,
-        created_at: tr.created_at,
-      }));
-    } catch (error) {
-      console.log("[v0] Error loading transcripts:", error);
-    }
+    transcriptions = await fetchTranscripts();
   }
 
-  async function setTranscript(transcript) {
-    try {
-      const db = await Database.load("sqlite:subtitles.db");
-      let result = await db.execute(
-        "INSERT INTO transcripts (url, duration, created_at) VALUES ($1, $2, $3)", 
-        [transcript.url, transcript.duration, transcript.created_at]
-      );
-      getTranscripts();
-      return result.lastInsertId;
-    } catch (error) {
-      console.log("[v0] Error saving transcript:", error);
-    }
-  }
-
-  async function setSegment(segment) {
-    try {
-      const db = await Database.load("sqlite:subtitles.db");
-      await db.execute(
-        "INSERT INTO segments (transcript_id, start_time_sec, end_time_sec, text_content) VALUES ($1, $2, $3, $4)", 
-        [segment.transcript_id, segment.start_time_sec, segment.end_time_sec, segment.text_content]
-      );
-    } catch (error) {
-      console.log("[v0] Error saving segment:", error);
-    }
-  }
-
-  async function startTranscription(event) {
+  async function handleFormSubmit(event) {
     event.preventDefault();
-    if (!url.trim()) return;
+    await processTranscription(url);
+  }
+
+  async function processTranscription(targetUrl) {
+    if (!targetUrl.trim()) return;
+    if (isTranscribing) {
+      console.warn("Transcription already in progress");
+      return; 
+    }
     
     isTranscribing = true;
+    
     try {
-      const transcriptionSegments = await invoke("transcribe", { url });
+      const transcriptionSegments = await invoke("transcribe", { url: targetUrl });
+      
       const transcriptId = await setTranscript({ 
-        url, 
+        url: targetUrl, 
         duration: 0, 
         created_at: new Date().toISOString() 
       });
@@ -79,10 +82,12 @@
         });
       }
       
-      url = "";
+      url = ""; // Clear input after success
       await getTranscripts();
+      
     } catch (error) {
-      console.log("[v0] Error during transcription:", error);
+      console.log("Error during transcription:", error);
+      alert("Transcription failed: " + error);
     } finally {
       isTranscribing = false;
     }
@@ -110,7 +115,7 @@
 <main class="container">
   <h1>Better Subtitle Generation for YouTube</h1>
   
-  <form class="input-form" onsubmit={startTranscription}>
+  <form class="input-form" onsubmit={handleFormSubmit}>
     <input 
       id="url-input" 
       placeholder="Enter a YouTube URL..." 
