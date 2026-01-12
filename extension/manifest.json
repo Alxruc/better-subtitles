@@ -1,0 +1,17 @@
+{
+    "manifest_version": 3,
+    "name": "Better Subtitles Partner",
+    "version": "0.1",
+    "description": "Send YouTube pages to Better Subtitles",
+    "action": {
+        "default_popup": "index.html"
+    },
+    "permissions": [
+        "tabs",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://*.youtube.com/*",
+        "https://youtu.be/*"
+    ]
+}

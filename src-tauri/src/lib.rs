@@ -7,7 +7,7 @@ use tauri::Emitter;
 
 mod ytwav;
 
-const MODEL_PATH: &str = "../models/ggml-base.bin";
+const MODEL_NAME: &str = "ggml-base.bin";
 
 #[derive(Serialize)]
 pub struct TranscriptionSegment {
@@ -17,8 +17,20 @@ pub struct TranscriptionSegment {
 }
 
 #[tauri::command]
-async fn transcribe(url: &str) -> Result<Vec<TranscriptionSegment>, String> {
-    let ctx = WhisperContext::new_with_params(MODEL_PATH, WhisperContextParameters::default())
+async fn transcribe(app_handle: tauri::AppHandle, url: &str) -> Result<Vec<TranscriptionSegment>, String> {
+    let resource_dir = app_handle
+        .path()
+        .resolve("resources/models", tauri::path::BaseDirectory::Resource)
+        .map_err(|e| e.to_string())?;
+
+    let model_buf = resource_dir.join(MODEL_NAME);
+
+    // borrow the string slice from it
+    let model_path = model_buf
+        .to_str()
+        .expect("Path contains invalid UTF-8 characters");
+
+    let ctx = WhisperContext::new_with_params(model_path, WhisperContextParameters::default())
         .expect("failed to load model");
 
     // create a params object
@@ -118,7 +130,10 @@ pub fn run() {
         .plugin(tauri_plugin_deep_link::init())
         .setup(|app| {
             #[cfg(desktop)]
-            app.deep_link().register("better-subtitles")?;
+            // We use "if let Err" to print a warning instead of crashing
+            if let Err(e) = app.deep_link().register("better-subtitles") {
+                println!("Warning: Deep link registration failed: {}", e);
+            };
             Ok(())
         })
         .plugin(

@@ -1,14 +1,26 @@
+<!-- ...existing code... -->
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title> Better Subtitles Partner Extension </title>
+        <title>Better Subtitles Partner Extension</title>
+        <link rel="stylesheet" href="./style.css">
     </head>
 
     <body class="container">
-        <script type="text/javascript" src="./extension.js"></script>
+        <div class="card" role="dialog" aria-label="Better Subtitles">
+            <h1>Better Subtitles</h1>
+            <p>Quickly send a YouTube page to the Better Subtitles app to save and transcribe.</p>
 
-        <h1> Hello World! </h1>
+            <div class="row">
+                <button id="transcribe" title="Transcribe current tab's YouTube video">Transcribe</button>
+            </div>
+
+            <div class="status" id="status">Click "Transcribe" to send the current tab (must be a YouTube page).</div>
+            <div class="url-preview" id="preview" style="display:none"></div>
+        </div>
+
+        <script type="text/javascript" src="./extension.js"></script>
     </body>
 </html>
