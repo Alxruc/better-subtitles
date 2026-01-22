@@ -3,7 +3,7 @@
   import { listen } from '@tauri-apps/api/event';
   import { onMount, tick } from "svelte";
   import { goto } from "$app/navigation";
-  import { getTranscripts as fetchTranscripts, setTranscript, setSegment } from "../lib/utils/transcription.js";
+  import { getTranscripts as fetchTranscripts } from "../lib/utils/transcription.js";
 
 
   let url = "";
@@ -57,37 +57,22 @@
 
   async function processTranscription(targetUrl) {
     if (!targetUrl.trim()) return;
-    if (isTranscribing) {
-      console.warn("Transcription already in progress");
-      return; 
-    }
-    
     isTranscribing = true;
     
     try {
-      const transcriptionSegments = await invoke("transcribe", { url: targetUrl });
+      // transcribing + saving to db
+      const segments = await invoke("transcribe", { url: targetUrl });
       
-      const transcriptId = await setTranscript({ 
-        url: targetUrl, 
-        duration: 0, 
-        created_at: new Date().toISOString() 
-      });
+      console.log("Transcription finished and saved!");
       
-      for (const segment of transcriptionSegments) {
-        await setSegment({
-          transcript_id: transcriptId,
-          start_time_sec: segment.start,
-          end_time_sec: segment.end,
-          text_content: segment.text,
-        });
-      }
+      url = ""; 
       
-      url = ""; // Clear input after success
+      // refresh the list from the DB
       await getTranscripts();
       
     } catch (error) {
-      console.log("Error during transcription:", error);
-      alert("Transcription failed: " + error);
+      console.error("Error:", error);
+      alert("Failed: " + error);
     } finally {
       isTranscribing = false;
     }

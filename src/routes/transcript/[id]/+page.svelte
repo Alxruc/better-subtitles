@@ -1,7 +1,7 @@
 <script>
   import { page } from "$app/stores";
   import { goto } from "$app/navigation";
-  import Database from "@tauri-apps/plugin-sql";
+  import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
 
   const transcriptId = $page.params.id;
@@ -16,37 +16,29 @@
   async function loadTranscriptData() {
     loading = true;
     try {
-      const db = await Database.load("sqlite:subtitles.db");
+      // 1. Fetch Details
+      transcript = await invoke("get_transcript_details", { id: transcriptId });
       
-      // Get transcript info
-      const transcriptResult = await db.select(
-        "SELECT * FROM transcripts WHERE id = $1",
-        [transcriptId]
-      );
+      // 2. Fetch Segments
+      segments = await invoke("get_transcript_segments", { id: transcriptId });
       
-      if (transcriptResult.length === 0) {
-        console.log("[v0] Transcript not found");
-        goto("/");
-        return;
-      }
-      
-      transcript = transcriptResult[0];
-      
-      // Get segments
-      const segmentsResult = await db.select(
-        "SELECT * FROM segments WHERE transcript_id = $1 ORDER BY start_time_sec ASC",
-        [transcriptId]
-      );
-      
-      segments = segmentsResult.map(seg => ({
-        start: seg.start_time_sec,
-        end: seg.end_time_sec,
-        text: seg.text_content
-      }));
     } catch (error) {
-      console.log("[v0] Error loading transcript data:", error);
+      console.error("Error loading transcript data:", error);
+      goto("/");
     } finally {
       loading = false;
+    }
+  }
+
+  async function deleteTranscript() {
+    if(!confirm("Are you sure?")) return;
+    
+    try {
+        await invoke("delete_transcript", { id: transcriptId });
+        goto("/");
+    } catch (error) {
+        console.error("Error deleting transcript:", error);
+        alert("Failed to delete: " + error);
     }
   }
 
@@ -70,24 +62,6 @@
     goto("/");
   }
 
-
-async function deleteTranscript() {
-    try {
-        const db = await Database.load("sqlite:subtitles.db");
-        await db.execute(
-            "DELETE FROM segments WHERE transcript_id = $1",
-            [transcriptId]
-        );
-        await db.execute(
-            "DELETE FROM transcripts WHERE id = $1",
-            [transcriptId]
-        );
-        goBack();
-    } catch (error) {
-        console.log("[v0] Error deleting transcript:", error);
-    }
-
-}
 </script>
 
 <main class="container">
