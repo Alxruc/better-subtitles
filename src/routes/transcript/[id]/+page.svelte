@@ -4,7 +4,7 @@
   import { invoke } from "@tauri-apps/api/core";
   import { onMount } from "svelte";
 
-  const transcriptId = $page.params.id;
+  const transcriptId = parseInt($page.params.id || "-1");
   let transcript = $state(null);
   let segments = $state([]);
   let loading = $state(true);
@@ -16,10 +16,11 @@
   async function loadTranscriptData() {
     loading = true;
     try {
-      // 1. Fetch Details
+      if (transcriptId == -1) {
+        throw new Error("Invalid Transcript ID provided");
+      }
+      // Fetch Details and segments
       transcript = await invoke("get_transcript_details", { id: transcriptId });
-      
-      // 2. Fetch Segments
       segments = await invoke("get_transcript_segments", { id: transcriptId });
       
     } catch (error) {

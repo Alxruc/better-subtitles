@@ -12,7 +12,6 @@ use sqlx::sqlite::{SqliteConnectOptions,SqliteJournalMode};
 use sqlx::{FromRow, SqlitePool};
 use tower_http::cors::{CorsLayer, Any};
 use serde_json::{json, Value};
-use std::path::PathBuf;
 use std::net::SocketAddr;
 
 

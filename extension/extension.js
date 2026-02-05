@@ -71,16 +71,18 @@ async function getAndCheckYTurl() {
 
 
 getSubtitlesButton.addEventListener('click', async () => {
-  const url = await getAndCheckYTurl();
-  try {    
-    const response = await fetch("http://127.0.0.1:14567/subtitles?url=" + url);
-    if (!response.ok) {
-        throw new Error("Tauri app might not be running");
+  try {
+    // Send the message to that specific tab
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    const response = await chrome.tabs.sendMessage(tab.id, 'better-subtitles-display');
+
+    if (response?.statusCode !== 200) {
+       showStatus("Error displaying subtitles.", true);
     }
-    const subtitles = await response.json();
-    console.log("Loaded subtitles:", subtitles);
-  } catch (err) {
-      console.log("Could not connect to Desktop App. Is it open?");
+  } catch (error) {
+    // This catches "Receiving end does not exist" if content script isn't loaded
+    console.error(error);
+    showStatus("Please reload the YouTube page and try again.", true);
   }
 })
 

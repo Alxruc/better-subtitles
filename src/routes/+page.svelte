@@ -6,9 +6,9 @@
   import { getTranscripts as fetchTranscripts } from "../lib/utils/transcription.js";
 
 
-  let url = "";
-  let transcriptions = [];
-  let isTranscribing = false;
+  let url = $state("");
+  let transcriptions = $state([]);
+  let isTranscribing = $state(false);
 
   onMount(async () => {
     getTranscripts();

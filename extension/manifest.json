@@ -13,5 +13,12 @@
     "host_permissions": [
         "https://*.youtube.com/*",
         "https://youtu.be/*"
+    ],
+    "content_scripts": [
+    {
+        "matches": ["*://*.youtube.com/watch*"],
+        "js": ["content.js"],
+        "run_at": "document_idle"
+    }
     ]
 }
