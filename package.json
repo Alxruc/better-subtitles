@@ -15,8 +15,10 @@
   "dependencies": {
     "@tauri-apps/api": "^2",
     "@tauri-apps/plugin-deep-link": "^2.4.5",
+    "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-opener": "^2",
     "@tauri-apps/plugin-sql": "^2.3.1",
+    "dialog": "^0.3.1",
     "tauri": "^0.15.0"
   },
   "devDependencies": {

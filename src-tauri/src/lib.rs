@@ -13,11 +13,12 @@ use sqlx::{FromRow, SqlitePool};
 use tower_http::cors::{CorsLayer, Any};
 use serde_json::{json, Value};
 use std::net::SocketAddr;
+use std::fs;
+use std::path::PathBuf;
 
 
 mod ytwav;
 
-const MODEL_NAME: &str = "ggml-base.bin";
 type DbPool = SqlitePool;
 
 #[derive(Serialize, FromRow)]
@@ -40,14 +41,68 @@ struct SubtitleParams {
     url: String,
 }
 
+fn get_models_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+    let app_data = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    let models_dir = app_data.join("models");
+
+    if !models_dir.exists() {
+        fs::create_dir_all(&models_dir).map_err(|e| e.to_string())?;
+    }
+    Ok(models_dir)
+}
+
 #[tauri::command]
-async fn transcribe(app_handle: tauri::AppHandle, pool: State<'_, DbPool>, url: &str) -> Result<Vec<TranscriptionSegment>, String> {
+fn get_available_models(app: tauri::AppHandle) -> Result<Vec<String>, String> {
+    let dir = get_models_dir(&app)?;
+
+    // Read directory, filter for valid .bin files, and collect names
+    let models = fs::read_dir(dir)
+        .map_err(|e| e.to_string())? // Handle read_dir error
+        .filter_map(|entry| {
+            let path = entry.ok()?.path(); // Skip invalid entries
+            
+            // Check if it's a file AND has "bin" extension
+            if path.is_file() && path.extension()? == "bin" {
+                // Convert filename to String, return Some(name)
+                path.file_name()?.to_str().map(|s| s.to_owned())
+            } else {
+                None // Skip directories or non-bin files
+            }
+        })
+        .collect();
+
+    Ok(models)
+}
+
+#[tauri::command]
+async fn import_model(app: tauri::AppHandle, file_path: String) -> Result<String, String> {
+    let dir = get_models_dir(&app)?;
+    
+    // Add this print statement:
+    println!("Saving model to: {:?}", dir); 
+
+    let source_path = std::path::Path::new(&file_path);
+    let filename = source_path
+        .file_name()
+        .ok_or("Invalid filename")?
+        .to_string_lossy()
+        .into_owned();
+
+    let dest_path = dir.join(&filename);
+    fs::copy(source_path, dest_path).map_err(|e| e.to_string())?;
+    
+    Ok(filename)
+}
+
+#[tauri::command]
+async fn transcribe(app_handle: tauri::AppHandle, pool: State<'_, DbPool>, url: &str, model_name: String) -> Result<Vec<TranscriptionSegment>, String> {
     let resource_dir = app_handle
         .path()
         .resolve("resources/models", tauri::path::BaseDirectory::Resource)
         .map_err(|e| e.to_string())?;
 
-    let model_buf = resource_dir.join(MODEL_NAME);
+    let models_dir = get_models_dir(&app_handle)?;
+    let model_buf = models_dir.join(&model_name);
 
     // borrow the string slice from it
     let model_path = model_buf
@@ -284,6 +339,7 @@ async fn start_server(pool: SqlitePool) {
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             println!("New instance attempt detected: {:?}", argv);
 
@@ -338,7 +394,9 @@ pub fn run() {
             get_transcripts, 
             get_transcript_details, 
             get_transcript_segments, 
-            delete_transcript
+            delete_transcript,
+            get_available_models,
+            import_model
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
