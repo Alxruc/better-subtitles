@@ -1,27 +1,30 @@
-<!-- ...existing code... -->
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Better Subtitles Partner Extension</title>
-        <link rel="stylesheet" href="./style.css">
-    </head>
-
-    <body class="container">
-        <div class="card" role="dialog" aria-label="Better Subtitles">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Subtitles</title>
+    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+    <div class="card">
+        <header>
             <h1>Better Subtitles</h1>
-            <p>Quickly send a YouTube page to the Better Subtitles app to save and transcribe.</p>
-
-            <div class="row">
-                <button id="transcribe" title="Transcribe current tab's YouTube video">Transcribe</button>
-                <button id="getSubtitles"> Get Subtitles </button>
-            </div>
-
-            <div class="status" id="statusText">Click "Transcribe" to send the current tab (must be a YouTube page).</div>
-            <div class="url-preview" id="preview" style="display:none"></div>
+            <button id="styling" class="icon-btn" title="Customize style">[Customize]</button>
+        </header>
+        
+        <p class="description">Send YouTube videos to the Better Subtitles app to save and transcribe.</p>
+        
+        <div class="actions">
+            <button id="transcribe" class="btn-primary">Transcribe</button>
+            <button id="getSubtitles" class="btn-secondary">Get Subtitles</button>
         </div>
+        
+        <div class="status" id="statusText">Click "Transcribe" to send the current YouTube video to the app.</div>
+        
+        <div class="preview" id="preview" style="display:none"></div>
+    </div>
 
-        <script type="text/javascript" src="./extension.js"></script>
-    </body>
+    <script src="./extension.js"></script>
+</body>
 </html>

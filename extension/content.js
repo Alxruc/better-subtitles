@@ -15,28 +15,53 @@ new MutationObserver(() => {
   }
 }).observe(document, {subtree: true, childList: true});
 
-function ensureOverlay() {
+function hexToRgba(hex, alpha) {
+    // strict check for hex format to avoid errors
+    if(!hex || !hex.startsWith('#')) return 'rgba(0,0,0,0.5)';
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+async function ensureOverlay() {
     if (document.getElementById('bt-subtitle-layer')) return;
     
     const container = document.getElementById('movie_player');
     if (!container) return 500;
 
+    const storageData = await chrome.storage.local.get(["better-subtitles-settings"]);
+    const settings = storageData["better-subtitles-settings"] || {
+        textColor: "#ffffff",
+        fontSize: "24",
+        bgColor: "#042033",
+        bgOpacity: "0.38",
+        bottomOffset: "50",
+        clickThrough: false
+    };
+
     subtitleOverlay = document.createElement('div');
     subtitleOverlay.id = 'bt-subtitle-layer';
-
     subtitleOverlay.textContent = "Better Subtitles Initialized";
+
+    subtitleOverlay.addEventListener('mousedown', (e) => {
+        // Only stop propagation if we want to select text (clickThrough is false)
+        if (subtitleOverlay.style.pointerEvents !== 'none') {
+            e.stopPropagation(); 
+        }
+    });
     
-    // styles here to rule out CSS file issues
     Object.assign(subtitleOverlay.style, {
         position: 'absolute',
-        bottom: '50px',
+        bottom: `${settings.bottomOffset}px`,
         left: '50%',
         transform: 'translateX(-50%)',
-        fontSize: '24px',
+        fontSize: `${settings.fontSize}px`,
         fontWeight: 'bold',
-        color: 'white',
-        background: '#04203338',     // Bright background to make it obvious
-        zIndex: '99999999',    // Maximum Z-index
+        color: settings.textColor,
+        background: hexToRgba(settings.bgColor, settings.bgOpacity),
+        zIndex: '99999999',
+        textAlign: 'center'
     });
     
     container.appendChild(subtitleOverlay);

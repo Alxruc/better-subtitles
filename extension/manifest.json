@@ -6,9 +6,15 @@
     "action": {
         "default_popup": "index.html"
     },
+    "options_ui": {
+        "page": "settings.html",
+        "open_in_tab": true
+    },
     "permissions": [
         "tabs",
-        "activeTab"
+        "activeTab",
+        "storage",
+        "scripting"
     ],
     "host_permissions": [
         "https://*.youtube.com/*",

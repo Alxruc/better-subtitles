@@ -96,7 +96,7 @@ async fn import_model(app: tauri::AppHandle, file_path: String) -> Result<String
 
 #[tauri::command]
 async fn transcribe(app_handle: tauri::AppHandle, pool: State<'_, DbPool>, url: &str, model_name: String) -> Result<Vec<TranscriptionSegment>, String> {
-    let resource_dir = app_handle
+    let _resource_dir = app_handle
         .path()
         .resolve("resources/models", tauri::path::BaseDirectory::Resource)
         .map_err(|e| e.to_string())?;

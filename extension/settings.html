@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Subtitle Settings</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; max-width: 800px; margin: 0 auto; }
+        .container { display: flex; gap: 20px; }
+        .controls { flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .control-group { display: flex; flex-direction: column; }
+        label { margin-bottom: 5px; font-weight: bold; }
+        
+        .preview-container {
+            flex: 2;
+            background-color: #000;
+            height: 300px;
+            position: relative;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end; /* Align bottom like subtitles */
+            justify-content: center;
+        }
+        
+        #bt-subtitle-layer {
+            margin-bottom: 20px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            transition: all 0.2s ease;
+        }
+        
+        button { padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; margin-top: 10px;}
+        button:hover { background: #0056b3; }
+        .status { margin-top: 10px; color: green; height: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Subtitle Customization</h1>
+    
+    <div class="container">
+        <div class="controls">
+            <div class="control-group">
+                <label>Text Color</label>
+                <input type="color" id="textColor" value="#ffffff">
+            </div>
+
+            <div class="control-group">
+                <label>Font Size (px)</label>
+                <input type="number" id="fontSize" value="24" min="10" max="100">
+            </div>
+
+            <div class="control-group">
+                <label>Background Color</label>
+                <input type="color" id="bgColor" value="#042033">
+            </div>
+
+            <div class="control-group">
+                <label>Background Opacity (0-1)</label>
+                <input type="range" id="bgOpacity" min="0" max="1" step="0.1" value="0.8">
+            </div>
+
+            <div class="control-group">
+                <label>Bottom Offset (px)</label>
+                <input type="number" id="bottomOffset" value="50">
+            </div>
+
+            <button id="saveBtn">Save Settings</button>
+            <div id="status"></div>
+        </div>
+
+        <div class="preview-container">
+            <div id="bt-subtitle-layer">
+                Preview Subtitles text
+            </div>
+        </div>
+    </div>
+
+    <script src="settings.js"></script>
+</body>
+</html>

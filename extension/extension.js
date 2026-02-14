@@ -2,6 +2,7 @@ const transcribeButton = document.getElementById('transcribe');
 const getSubtitlesButton = document.getElementById('getSubtitles')
 const statusText = document.getElementById('statusText');
 const preview = document.getElementById('preview');
+const stylingButton = document.getElementById('styling');
 
 function isYouTubeUrl(u) {
   if (!u) return false;
@@ -95,4 +96,12 @@ transcribeButton.addEventListener('click', async () => {
 
     // small delay to allow user to see preview/status in popup UI
     setTimeout(() => openDeepLink(deep), 220);
+});
+
+stylingButton.addEventListener('click', () => {
+  if (chrome.runtime.openOptionsPage) {
+    chrome.runtime.openOptionsPage();
+  } else {
+    window.open(chrome.runtime.getURL('settings.html'));
+  }
 });
